@@ -2,21 +2,17 @@
 
 console.log('Started server')
 
-const webSocketsServerPort = 8000;
-const webSocketServer = require('websocket').server;
 const http = require('http');
 // Spinning the http server and the websocket server.
 
 const requestListener = function (req, res) {
+  console.log('new connection');
     res.writeHead(200);
     res.end("My first server!");
 };
 
 const server = http.createServer(requestListener);
 
-const port = 8000;
-const host = 'localhost';
-
-server.listen(port, host, () => {
-    console.log(`Server is running on http://${host}:${port}`);
-});
+const port = 8001;
+// bug: do not specify host
+server.listen(port);
