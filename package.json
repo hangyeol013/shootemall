@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "npx http-server ./public -p 8000"
   },
   "browserify": {
     "transform": [
@@ -34,6 +34,7 @@
     "@babel/preset-es2015": "^7.0.0-beta.53",
     "babel-core": "^6.26.3",
     "babel-preset-env": "^1.7.0",
+    "http-server": "^14.0.0",
     "websocket": "^1.0.34"
   }
 }
