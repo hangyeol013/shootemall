@@ -1,6 +1,9 @@
 const path = require('path')
 const webpack = require('webpack')
 const HtmlWebPackPlugin = require('html-webpack-plugin')
+const CopyPlugin = require("copy-webpack-plugin");
+
+
 module.exports = {
   entry: {
     main: ['webpack-hot-middleware/client?path=/__webpack_hmr&timeout=20000', './src/index.js']
@@ -41,28 +44,16 @@ module.exports = {
       }
     ]
   },
-  resolve: {
-    fallback: { 
-      path: false,
-      crypto: false,
-      zlib: false,
-      stream: false,
-      https: false,
-      http: false,
-      url: false,
-      vm: false,
-      os: false,
-      fs: false,
-      esbuild: false,
-      constants: false,
-      assert: false
-    },
-  },
   plugins: [
     new HtmlWebPackPlugin({
       template: "./src/html/index.html",
       filename: "./index.html",
       excludeChunks: [ 'server' ]
+    }),
+    new CopyPlugin({
+      patterns: [
+        { from: "models", to: "models" },
+      ],
     }),
     new webpack.HotModuleReplacementPlugin(),
     new webpack.NoEmitOnErrorsPlugin()

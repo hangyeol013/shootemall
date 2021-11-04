@@ -14,6 +14,12 @@
 - Render phone camera
 - Basic UI
 
+3) 3D content
+- Using three.js https://threejs.org/examples/
+- Load animated mesh
+- Find mesh zombies:
+  - Using Adobe Mixamo https://www.mixamo.com and the FBX file format (mesh + animations)
+  - SEE THIS: https://threejs.org/examples/?q=fbx#webgl_loader_fbx
 # TODO
 
 2) 3D reconstruction
@@ -21,11 +27,17 @@
 - Integrate to app: send to phone
 
 3) 3D content
-- Use threejs
-- Find mesh zombies
+- Find meshes, sounds
+- Add lightning, mesh, animation, sound effects, ...
+  
+4) AR content
+- camera estimation
+- lightning estimation
+
+5) Logic Game
 - Logic zombies: move around
 - Logic shooting
-- Lightning, ...
+
 
 # Planning
 
