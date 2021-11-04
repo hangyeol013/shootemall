@@ -3,6 +3,7 @@
 
 'use strict';
 
+import './css/main.css';
 const io = require("socket.io-client");
 
 const socket = io();
@@ -134,11 +135,8 @@ async function init(constraints) {
 
 document.querySelector('button#start').addEventListener('click', async () => {
   document.querySelector('button#start').disabled = true;
-  const hasEchoCancellation = document.querySelector('#echoCancellation').checked;
   const constraints = {
-    audio: {
-      echoCancellation: {exact: hasEchoCancellation}
-    },
+    audio: false, 
     video: {
       width: 1280, height: 720
     }

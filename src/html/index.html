@@ -22,21 +22,11 @@
     <title>MediaStream Recording</title>
 
     <link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" href="../css/main.css">
-
 </head>
 
 <body>
 
 <div id="container">
-
-    <h1><a href="//webrtc.github.io/samples/" title="WebRTC samples homepage">WebRTC samples</a>
-        <span>MediaRecorder</span></h1>
-
-    <p>For more information see the MediaStream Recording API <a
-            href="http://w3c.github.io/mediacapture-record/MediaRecorder.html"
-            title="W3C MediaStream Recording API Editor's Draft">Editor's&nbsp;Draft</a>.</p>
-
     <video id="gum" playsinline autoplay muted></video>
     <video id="recorded" playsinline loop></video>
 
@@ -49,10 +39,6 @@
 
     <div>
         Recording format: <select id="codecPreferences" disabled></select>
-    </div>
-    <div>
-        <h4>Media Stream Constraints options</h4>
-        <p>Echo cancellation: <input type="checkbox" id="echoCancellation"></p>
     </div>
 
     <div>

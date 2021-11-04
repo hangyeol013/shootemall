@@ -1,4 +1,5 @@
-Future Steps:
+# Done
+
 1) App
 - basic server
   - READ THIS: https://binyamin.medium.com/creating-a-node-express-webpack-app-with-dev-and-prod-builds-a4962ce51334
@@ -9,10 +10,13 @@ Future Steps:
   - socket.io: https://socket.io/get-started/chat 
 - Ask phone to take video of surroundings
   - SEE THIS: https://github.com/webrtc/samples/blob/gh-pages/src/content/getusermedia/record/js/main.js
+- Upload to server
 - Render phone camera
 - Basic UI
 
-1) 3D reconstruction
+# TODO
+
+2) 3D reconstruction
 - Implement the Atlas or equivalent scene reconstruction
 - Integrate to app: send to phone
 
@@ -22,6 +26,8 @@ Future Steps:
 - Logic zombies: move around
 - Logic shooting
 - Lightning, ...
+
+# Planning
 
 Week 0: getting started
 Week 1: upload + phone camera done
