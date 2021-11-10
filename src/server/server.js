@@ -67,7 +67,7 @@ io.on('connection', (socket) => {
     // https://stackoverflow.com/questions/40137880/save-video-blob-to-filesystem-electron-node-js
     const buffer = Buffer.concat(chunks);
     console.log(`${buffer.length}`)
-    fs.writeFile('video.webm', buffer, {}, (err, res) => {
+    fs.writeFile('output/recordings/video.webm', buffer, {}, (err, res) => {
         if(err){
             console.error(err)
             return

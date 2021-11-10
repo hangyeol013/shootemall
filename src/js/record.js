@@ -130,9 +130,12 @@ document.querySelector('button#start').addEventListener('click', async () => {
   const constraints = {
     audio: false, 
     video: {
-      width: 1280, height: 720
+      video: { "mandatory": { "depth": "aligned"}},
+      //width: 1280, height: 720,
+      facingMode: 'environment'
     }
   };
   console.log('Using media constraints:', constraints);
   await init(constraints);
+
 });

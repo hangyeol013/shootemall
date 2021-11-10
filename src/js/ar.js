@@ -1,98 +1,132 @@
 import * as THREE from 'three';
 
-import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
+import { XREstimatedLight } from 'three/examples/jsm/webxr/XREstimatedLight.js';
 
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
-
-let camera, scene, renderer, stats;
-
-const clock = new THREE.Clock();
-
-let mixer;
+let camera, scene, renderer;
+let controller;
+let defaultEnvironment;
 
 init();
 animate();
 
 function init() {
-    const container = document.querySelector('div#ar-container');
 
-    camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
-    camera.position.set( 100, 200, 300 );
+    const container = document.createElement( 'div' );
+    document.body.appendChild( container );
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color( 0xa0a0a0 );
-    scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
 
-    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
-    hemiLight.position.set( 0, 200, 0 );
-    scene.add( hemiLight );
+    camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 20 );
 
-    const dirLight = new THREE.DirectionalLight( 0xffffff );
-    dirLight.position.set( 0, 200, 100 );
-    dirLight.castShadow = true;
-    dirLight.shadow.camera.top = 180;
-    dirLight.shadow.camera.bottom = - 100;
-    dirLight.shadow.camera.left = - 120;
-    dirLight.shadow.camera.right = 120;
-    scene.add( dirLight );
+    const defaultLight = new THREE.AmbientLight( 0xffffff );
+    scene.add( defaultLight );
 
-    // scene.add( new THREE.CameraHelper( dirLight.shadow.camera ) );
+    //
 
-    // ground
-    const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
-    mesh.rotation.x = - Math.PI / 2;
-    mesh.receiveShadow = true;
-    scene.add( mesh );
+    renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.physicallyCorrectLights = true;
+    renderer.xr.enabled = true;
+    container.appendChild( renderer.domElement );
 
-    const grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
-    grid.material.opacity = 0.2;
-    grid.material.transparent = true;
-    scene.add( grid );
+    // Don't add the XREstimatedLight to the scene initially.
+    // It doesn't have any estimated lighting values until an AR session starts.
 
-    // model
-    const loader = new FBXLoader();
-    loader.load( 'models/zombie-walk.fbx', function ( object ) {
+    const xrLight = new XREstimatedLight( renderer );
 
-        mixer = new THREE.AnimationMixer( object );
+    xrLight.addEventListener( 'estimationstart', () => {
 
-        const action = mixer.clipAction( object.animations[ 0 ] );
-        action.play();
+        // Swap the default light out for the estimated one one we start getting some estimated values.
+        scene.add( xrLight );
+        scene.remove( defaultLight );
 
-        object.traverse( function ( child ) {
+        // The estimated lighting also provides an environment cubemap, which we can apply here.
+        if ( xrLight.environment ) {
 
-            if ( child.isMesh ) {
+            updateEnvironment( xrLight.environment );
 
-                child.castShadow = true;
-                child.receiveShadow = true;
-
-            }
-
-        } );
-
-        scene.add( object );
+        }
 
     } );
 
-    renderer = new THREE.WebGLRenderer( { antialias: true } );
-    renderer.setPixelRatio( window.devicePixelRatio );
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    renderer.shadowMap.enabled = true;
+    xrLight.addEventListener( 'estimationend', () => {
 
-    if(container.querySelector('canvas') !== null) 
-        container.removeChild(container.querySelector('canvas'));
-    container.appendChild( renderer.domElement );
+        // Swap the lights back when we stop receiving estimated values.
+        scene.add( defaultLight );
+        scene.remove( xrLight );
 
-    const controls = new OrbitControls( camera, renderer.domElement );
-    controls.target.set( 0, 100, 0 );
-    controls.update();
+        // Revert back to the default environment.
+        updateEnvironment( defaultEnvironment );
+
+    } );
+
+    //
+
+    new RGBELoader()
+        .setDataType( THREE.UnsignedByteType )
+        .setPath( 'textures/equirectangular/' )
+        .load( 'royal_esplanade_1k.hdr', function ( texture ) {
+
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+
+            defaultEnvironment = texture;
+
+            updateEnvironment( defaultEnvironment );
+
+        } );
+
+    //
+
+    // In order for lighting estimation to work, 'light-estimation' must be included as either an optional or required feature.
+    document.body.appendChild( ARButton.createButton( renderer, { optionalFeatures: [ 'light-estimation' ] } ) );
+
+    //
+
+    const ballGeometry = new THREE.SphereBufferGeometry( 0.175, 32, 32 );
+    const ballGroup = new THREE.Group();
+    ballGroup.position.z = - 2;
+
+    const rows = 1;
+    const cols = 4;
+
+    for ( let i = 0; i < rows; i ++ ) {
+
+        for ( let j = 0; j < cols; j ++ ) {
+
+            const ballMaterial = new THREE.MeshPhongMaterial( {
+                color: 0xdddddd,
+                reflectivity: j / cols
+            } );
+            const ballMesh = new THREE.Mesh( ballGeometry, ballMaterial );
+            ballMesh.position.set( ( i + 0.5 - rows * 0.5 ) * 0.4, ( j + 0.5 - cols * 0.5 ) * 0.4, 0 );
+            ballGroup.add( ballMesh );
+
+        }
+
+    }
+
+    scene.add( ballGroup );
+
+    //
+
+    function onSelect() {
+
+        ballGroup.position.set( 0, 0, - 2 ).applyMatrix4( controller.matrixWorld );
+        ballGroup.quaternion.setFromRotationMatrix( controller.matrixWorld );
+
+    }
+
+    controller = renderer.xr.getController( 0 );
+    controller.addEventListener( 'select', onSelect );
+    scene.add( controller );
+
+    //
 
     window.addEventListener( 'resize', onWindowResize );
-
-    // stats
-    stats = new Stats();
-
-    container.appendChild( stats.dom );
 
 }
 
@@ -109,14 +143,23 @@ function onWindowResize() {
 
 function animate() {
 
-    requestAnimationFrame( animate );
+    renderer.setAnimationLoop( render );
 
-    const delta = clock.getDelta();
+}
 
-    if ( mixer ) mixer.update( delta );
+function render() {
 
     renderer.render( scene, camera );
 
-    stats.update();
+}
+
+function updateEnvironment( envMap ) {
+
+    scene.traverse( function ( object ) {
+
+        if ( object.isMesh ) object.material.envMap = envMap;
+
+
+    } );
 
 }

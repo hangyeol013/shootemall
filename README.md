@@ -46,3 +46,17 @@ Week 1: upload + phone camera done
 Week 2: reconstruction done? (or algo)
 Week 3: Threejs + basic mesh rendering
 Week 4: Logic + app
+
+
+# Organisation
+
+- server (run on main computer)
+  - https server (port 8443): uses express
+  - websocket server (on top of https server): uses socket.io
+- client
+  - structure of webpage: html
+  - layout, visual: css
+  - code: js
+    - record.js: handles the recording client-side
+    - ar.js: ar part (stack of balls)
+  - main entrypoint: index.js

@@ -1,5 +1,7 @@
 node_modules/
 dist/
+output/
+output2/
 models/
 yarn.lock
 package-lock.json

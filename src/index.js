@@ -5,6 +5,7 @@
 
 import './css/main.css';
 import './js/record';
+//import './js/test_animated_zombie';
 import './js/ar';
 
 // Webpack
