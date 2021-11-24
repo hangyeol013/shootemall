@@ -62,7 +62,7 @@ io.on('connection', (socket) => {
     chunks.push(Buffer.from(chunk));
     console.log(`Chunk size=${chunk.byteLength}`)
   });
-  socket.on('upload', () => {
+  socket.on('upload-video', () => {
     console.log(`Received n=${chunks.length} chunks`);
     // https://stackoverflow.com/questions/40137880/save-video-blob-to-filesystem-electron-node-js
     const buffer = Buffer.concat(chunks);
@@ -76,6 +76,22 @@ io.on('connection', (socket) => {
     })
     chunks = []
   })
+  socket.on('upload-screenshot', (data) => {
+    console.log('image length:', data.length)
+
+    let num = 1;
+    while (fs.existsSync(`output/recordings/screen${num}.png`))
+      ++num;
+
+    fs.writeFile(`output/recordings/screen${num}.png`, data, {}, (err, res) => {
+        if(err){
+            console.error(err)
+            return
+        }
+        console.log('image saved')
+    })
+  })
+
   socket.on('disconnect', () => {
     console.log('user disconnected');
   });

@@ -54,12 +54,13 @@ function init() {
     let actions = [];
     const loader = new FBXLoader();
 
-    loader.load( 'models/mad-zombie-run.fbx', function ( object ) {
+    loader.load( 'models/skeletonzombie_t_avelange3.fbx', function ( object ) {
         object.traverse( function ( child ) {
             if ( child.isMesh ) {
                 child.castShadow = true;
                 child.receiveShadow = true;
                 child.material.opacity = 1.0;
+                child.material.transparent = false;
             }
         } );
         scene.add( object );

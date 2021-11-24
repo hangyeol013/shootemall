@@ -4,7 +4,8 @@
 'use strict';
 
 import './css/main.css';
-import './js/record';
+//import './js/record';
+//import './js/depth';
 //import './js/test_animated_zombie';
 import './js/ar';
 

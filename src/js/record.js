@@ -8,6 +8,18 @@ const codecPreferences = document.querySelector('#codecPreferences');
 const errorMsgElement = document.querySelector('span#errorMsg');
 const recordedVideo = document.querySelector('video#recorded');
 const recordButton = document.querySelector('button#record');
+
+const canvas = document.getElementById('canvas');
+const screenshotButton = document.getElementById('screenshot');
+
+var width = 0, height = 0;
+
+screenshotButton.addEventListener('click', function(ev){
+  takepicture();
+  ev.preventDefault();
+}, false);
+const screenshottedImg = document.getElementById('screenshotted');
+
 recordButton.addEventListener('click', () => {
   if (recordButton.textContent === 'Start Recording') {
     startRecording();
@@ -43,7 +55,7 @@ uploadButton.addEventListener('click', () => {
 
       for(let i = 0; i < n; i++)
         socket.emit('chunk', buffer.slice(i*m, Math.min(i*m+m, buffer.byteLength)))
-      socket.emit('upload');
+      socket.emit('upload-video');
   };
   fileReader.readAsArrayBuffer(blob);
 });
@@ -98,6 +110,33 @@ function stopRecording() {
   mediaRecorder.stop();
 }
 
+function dataURLtoBlob(dataurl) {
+  var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+      bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+  while(n--){
+      u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], {type:mime});
+}
+
+function takepicture() {
+  const gumVideo = document.querySelector('video#gum');
+
+  var context = canvas.getContext('2d');
+  canvas.width = width
+  canvas.height = height
+  context.drawImage(gumVideo, 0, 0, width, height);
+
+  var data = canvas.toDataURL('image/png');
+  canvas.width = 0
+  canvas.height = 0
+  screenshottedImg.setAttribute('src', data);
+
+  data = dataURLtoBlob(data);
+  socket.emit('upload-screenshot', data);
+  console.log('took screenshot:', data.length)
+}
+
 function handleSuccess(stream) {
   recordButton.disabled = false;
   console.log('getUserMedia() got stream:', stream);
@@ -113,6 +152,14 @@ function handleSuccess(stream) {
     codecPreferences.appendChild(option);
   });
   codecPreferences.disabled = false;
+
+  gumVideo.addEventListener('canplay', function(ev){
+    //canvas.setAttribute('width', gumVideo.videoWidth);
+    //canvas.setAttribute('height', gumVideo.videoHeight);
+    width = gumVideo.videoWidth;
+    height = gumVideo.videoHeight;
+    console.log('width:', width, "height:", height);
+  });
 }
 
 async function init(constraints) {
