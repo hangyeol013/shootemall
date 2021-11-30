@@ -30,7 +30,7 @@ module.exports = {
         use: [
           {
             loader: "html-loader",
-            //options: { minimize: true }
+            options: { minimize: true }
           }
         ]
       },
@@ -53,6 +53,7 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: "models", to: "models" },
+        { from: "textures", to: "textures" },
       ],
     }),
     new webpack.HotModuleReplacementPlugin(),

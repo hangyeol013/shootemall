@@ -19,7 +19,7 @@ const compiler = webpack(config)
 app.use(webpackDevMiddleware(compiler, {
   publicPath: config.output.publicPath
 }))
-app.use(webpackHotMiddleware(compiler))
+//app.use(webpackHotMiddleware(compiler))
 
 function shouldCompress (req, res) {
   if (req.headers['x-no-compression']) {
@@ -30,7 +30,9 @@ function shouldCompress (req, res) {
 
 app.use(compression({ filter: shouldCompress }))
 
-app.get('*', (req, res, next) => {
+app.use(express.static('dist'))
+
+/*app.get('*', (req, res, next) => {
   compiler.outputFileSystem.readFile(HTML_FILE, (err, result) => {
   if (err) {
     return next(err)
@@ -39,7 +41,7 @@ app.get('*', (req, res, next) => {
   res.send(result)
   res.end()
   })
-})
+})*/
 
 // HTTPS
 // *****
