@@ -34,7 +34,7 @@ function calculateVerticesFromViewCoordinatesSupersampled(depthData, viewport, c
     }
 
     return [vertices_data, depths_data];
-  }
+}
 
 class App{
 	constructor(){
@@ -66,11 +66,50 @@ class App{
         this.createUI();
         this.setupXR();
         this.generateGrid();
+        this.spawnZombie(new THREE.Vector3(0, 0, -5));
 
         window.addEventListener('resize', this.resize.bind(this) );
 	}	
 
+    spawnPortals() {
+        this.portalCount = 5;
+        this.portalReticles = [];
+        this.portalPositions = [];
+        const self = this;
+        function randomCell() {
+            const position = Math.floor(self.gridVertices.count * Math.random());
+            return position;
+        }
+        for(let i = 0; i < this.portalCount; i++) {
+            const reticle = new THREE.Mesh(
+                new THREE.RingBufferGeometry(0.15,0.2,32).rotateX(-Math.PI/2),
+                new THREE.MeshBasicMaterial()
+            );
+            let coord = randomCell();
+            while(this.gridSamplesCount[coord] < 100)
+                coord = randomCell();
+            const x = coord%this.gridResolution, z = (coord-x)/this.gridResolution;
+            const position = new THREE.Vector3(x/this.gridNumSquare-this.gridSize/2, this.gridVertices.getY(coord), z/this.gridNumSquare-this.gridSize/2);
+            reticle.position.set(position.x, position.y, position.z);
+            this.portalPositions.push(position);
+            this.portalReticles.push(reticle);
+            this.scene.add(reticle);
+        }
+        console.log("Spawned portals")
+    }
+
+    spawnZombies(delta) {
+        this.zombiePerPortalFreq = 0.5;
+        for(let i = 0; i < this.portalCount; i++) {
+            const p = delta * this.zombiePerPortalFreq;
+            if(Math.random() <= p) {
+                this.spawnZombie(this.portalPositions[i]);
+            }
+        }
+    }
+
     generateGrid() {
+        this.isConstructing = true;
         this.gridSize = 100;
         this.gridNumSquare = 4;
         this.gridResolution = this.gridSize*this.gridNumSquare;
@@ -85,7 +124,7 @@ class App{
             vertices.setY(i, 0);
         }
 
-        this.yFloor = -1.5;
+        this.yFloor = -3;
         this.yMax = -1;
         this.gridSamplesSum = new Float32Array(n);
         this.gridSamplesCount = new Int32Array(n);
@@ -105,6 +144,7 @@ class App{
         const plane = new THREE.Mesh( this.gridGeometry, material );
         plane.position.set(0, this.yFloor, 0);
         //plane.position.set(0, 0, -8);
+        this.gridMesh = plane;
         this.scene.add( plane );
     }
 
@@ -122,7 +162,7 @@ class App{
             this.gridVertices.setY(coord, this.gridSamplesSum[coord] / this.gridSamplesCount[coord]);
             this.yFloor = Math.min(this.yFloor, this.gridVertices.getY(coord));
             this.yMax = Math.max(this.yMax, this.gridVertices.getY(coord));
-            console.log(x, z, samples[i].y, this.gridSamplesCount[coord], this.gridVertices.getY(coord));
+            //console.log(x, z, samples[i].y, this.gridSamplesCount[coord], this.gridVertices.getY(coord));
         }
 
         this.updateGridColors();
@@ -135,16 +175,48 @@ class App{
         const colors = this.gridGeometry.attributes.color;
         const color = new THREE.Color();
         for(let i = 0; i < n; i++) {
-            color.setHSL((vertices.getY(i)-this.yFloor)/(this.yMax-this.yFloor), 1, 0.5);
+            color.setHSL((vertices.getY(i)-this.yFloor)/(this.yMax-this.yFloor), 1, Math.min(this.gridSamplesCount[i]/200, 0.5));
             colors.setXYZ(i, color.r, color.g, color.b);
         }
     }
 
     createUI() {
-        this.ui = new CanvasUI();
-        this.ui.updateElement("body", "Hello World");
-        this.ui.update();
-        this.ui.mesh.position.set(0, 0, -10);
+        const self = this;
+        const content = {
+            info: "Hello", 
+            cons: "Stop Build",
+            spawn: "Portals"
+        }
+        function onSpawn() {
+            self.spawnPortals();
+
+            const msg = "Portals spawned";
+            console.log(msg);
+            self.ui.updateElement("info", msg);
+        }
+
+        function onConstruct() {
+            const msg = (self.isConstructing) ? "Stopped build" : "Started build";
+            self.isConstructing = !self.isConstructing;
+            console.log(msg);
+            self.gridMesh.visible = self.isConstructing;
+            self.ui.updateElement("info", msg);
+            content.cons = (self.isConstructing) ? "Stop Build" : "Start Build";
+        }
+        const config = {
+            panelSize: {width: 2, height: 0.5},
+            height: 128,
+            info: { type: "text",   position: {top:6,   left: 6}, width: 500, height: 58, backgroundColor: "#aaa", fontColor: "#000" },
+            cons: { type: "button", position: {top: 64, left: 0}, width: 200, fontColor: "#ff0", onSelect: onConstruct},
+            spawn:{ type: "button", position: {top: 64, right: 0}, width: 200, fontColor: "#ff0", onSelect: onSpawn},
+            renderer: this.renderer
+        }
+
+
+        this.ui = new CanvasUI(content, config);
+        //this.ui.updateElement("body", "Hello World");
+        //this.ui.update();
+        this.ui.mesh.position.set(0, 0, -3);
         this.scene.add(this.ui.mesh);
     }
     initScene(){
@@ -153,7 +225,7 @@ class App{
         //this.loadZombie();
     }
     
-    loadZombie() {
+    spawnZombie(position) {
         const loader = new FBXLoader();
         const self = this;
         loader.load( 'models/hiphop.fbx', function ( object ) {
@@ -168,10 +240,12 @@ class App{
             let mixer = new THREE.AnimationMixer( object );
             //const action = mixer.clipAction( object.animations[ 0 ] );
             //action.play();
-            object.position.set(0,0,-1);
+            object.position.set(position.x, position.y, position.z);
+            let scale = 0.01;
+            object.scale.set(scale, scale, scale);
             self.scene.add(object);
             self.meshes.push(object);
-            self.mixers.push(mixer);
+            //self.mixers.push(mixer);
             console.log('added mesh', object, mixer)
         } );
     }
@@ -232,16 +306,18 @@ class App{
 
 	render(timestamp, frame) { 
         const delta = this.clock.getDelta();
+        this.spawnZombies(delta);
         this.animate(delta)
-        this.renderer.render( this.scene, this.camera );
         if(frame)
             this.onXRFrame(timestamp, frame);
         if(this.renderer.xr.isPresenting)
             this.ui.update();
+        this.renderer.render( this.scene, this.camera );
     }
 
     onXRFrame(t, frame) {
-        this.handleDepthInfo(frame);
+        if(this.isConstructing)
+            this.handleDepthInfo(frame);
     }
 
     handleDepthInfo(frame) {
