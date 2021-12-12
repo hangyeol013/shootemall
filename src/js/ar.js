@@ -65,7 +65,7 @@ function init() {
     // model
     const loader = new FBXLoader();
 
-    loader.load( 'models/mad-zombie-run.fbx', function ( object ) {
+    loader.load( 'models/hiphop.fbx', function ( object ) {
         object.traverse( function ( child ) {
             if ( child.isMesh ) {
                 child.castShadow = true;
@@ -74,8 +74,8 @@ function init() {
                 child.material.transparent = false;
             }
         } );
-        object.scale = new THREE.Vector3(0.2, 0.2, 0.2);
-        object.translateZ(-2);
+        object.scale.set(0.2, 0.2, 0.2);
+        object.position.set(-200, -200, -200);
         scene.add( object );
 
         /*mixer = new THREE.AnimationMixer( object );
@@ -106,9 +106,7 @@ function init() {
 
         // The estimated lighting also provides an environment cubemap, which we can apply here.
         if ( xrLight.environment ) {
-
             updateEnvironment( xrLight.environment );
-
         }
 
     } );
@@ -219,8 +217,8 @@ async function onSessionStarted(session) {
     currentSession = session;
 
     // EXPLAINER
-    console.log(session.depthUsage);
-    console.log(session.depthFormat);
+    //console.log(session.depthUsage);
+    //console.log(session.depthFormat);
     
     //let canvas = document.createElement('canvas');
     //gl = canvas.getContext('webgl', {
@@ -243,19 +241,19 @@ async function onSessionStarted(session) {
 // https://github.com/immersive-web/webxr-samples/blob/main/proposals/phone-ar-depth.html
 // Component-wise multiplication of 2 vec3s:
 function scaleByVec(out, lhs, rhs) {
-out[0] = lhs[0] * rhs[0];
-out[1] = lhs[1] * rhs[1];
-out[2] = lhs[2] * rhs[2];
+    out[0] = lhs[0] * rhs[0];
+    out[1] = lhs[1] * rhs[1];
+    out[2] = lhs[2] * rhs[2];
 
-return out;
+    return out;
 }
 
 function clamp(out, input, lower_bound, upper_bound) {
-out[0] = Math.max(lower_bound[0], Math.min(input[0], upper_bound[0]));
-out[1] = Math.max(lower_bound[1], Math.min(input[1], upper_bound[1]));
-out[2] = Math.max(lower_bound[2], Math.min(input[2], upper_bound[2]));
+    out[0] = Math.max(lower_bound[0], Math.min(input[0], upper_bound[0]));
+    out[1] = Math.max(lower_bound[1], Math.min(input[1], upper_bound[1]));
+    out[2] = Math.max(lower_bound[2], Math.min(input[2], upper_bound[2]));
 
-return out;
+    return out;
 }
 
 function calculateVerticesFromViewCoordinatesSupersampled(depthData, camera_to_world, viewport) {
@@ -266,6 +264,7 @@ function calculateVerticesFromViewCoordinatesSupersampled(depthData, camera_to_w
     const resolution_y = viewport_height / 3;
 
     const vertices_data = [];
+    const colors_data = [];
     //console.log(depthData)
     for(let x = 0; x < viewport_width; x = x + resolution_x) {
       for(let y = 0; y < viewport_height; y = y + resolution_y) {
@@ -275,12 +274,15 @@ function calculateVerticesFromViewCoordinatesSupersampled(depthData, camera_to_w
 
         let point_ndc = vec3.create(), point_world = vec3.create();
         vec3.set(point_ndc, (2.0*nx-1)*distance, (2.0*ny-1)*distance, -distance);
-        vec3.transformMat4(point_world, point_ndc, camera_to_world);
+        //vec3.transformMat4(point_world, point_ndc, camera_to_world);
         vertices_data.push(point_world[0],point_world[1],point_world[2]);
+        let color;
+        clamp(color, distance, 0, 10);
+        colors_data.push(color/10, 0, 0);
       }
     }
 
-    return vertices_data;
+    return [vertices_data, colors_data];
   }
 
 let current_camera_to_world = mat4.create();
@@ -307,19 +309,20 @@ function onXRFrame(t, frame) {
             const viewport = baseLayer.getViewport(view);
             const depthData = frame.getDepthInformation(view);
             if (depthData && current_frame % 100 == 0) {
-                const vertices = calculateVerticesFromViewCoordinatesSupersampled(depthData, camera_to_world, viewport);
+                console.log("Added mesh point");
+                const [vertices,colors] = calculateVerticesFromViewCoordinatesSupersampled(depthData, camera_to_world, viewport);
                 const material = new THREE.MeshBasicMaterial( { color: 0x888888, size: 0.2 } );
                 const geometry = new THREE.BufferGeometry();
                 geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
-                console.log(vertices)
+                geometry1.setAttribute( 'color', new THREE.Float32BufferAttribute(colors, 3 ) );
+                console.log(vertices.length, colors.length)
                 mesh = new THREE.Points(geometry, material);
                 scene.add(mesh);
-                console.log("Added mesh point");
+                current_frame += 1;
                 
-                
-            } else {
-                console.log("Depth data unavailable in the current frame!");
-            }
+            } //else {
+            //    console.log("Depth data unavailable in the current frame!");
+            //}
             //current_frame += 1;
         }
     }

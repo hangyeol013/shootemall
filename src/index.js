@@ -7,7 +7,7 @@ import './css/main.css';
 //import './js/record';
 //import './js/depth';
 //import './js/test_animated_zombie';
-import './js/ar';
+import './js/ar2';
 
 // Webpack
 // Needed for Hot Module Replacement
