@@ -26,6 +26,7 @@
     "gl-matrix": "^3.4.3",
     "http-server": "^14.0.0",
     "jpeg-js": "^0.4.3",
+    "js-priority-queue": "^0.1.5",
     "opencv.js": "^1.2.1",
     "path-browserify": "^1.0.1",
     "png-js": "^1.0.0",

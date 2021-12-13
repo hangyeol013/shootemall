@@ -1,15 +1,17 @@
 import * as THREE from 'three';
 
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { Mesh } from 'three';
 
 let camera, scene, renderer, stats;
 
 const clock = new THREE.Clock();
 
-let mixer;
+let mixer, zombie;
 
 init();
 animate();
@@ -51,10 +53,10 @@ function init() {
     scene.add( grid );
 
     // model
-    let actions = [];
-    const loader = new FBXLoader();
-
-    loader.load( 'models/skeletonzombie_t_avelange3.fbx', function ( object ) {
+    const loader = new GLTFLoader();
+    loader.load( 'models/pumpkin.gltf', function ( gltf ) {
+        const object = SkeletonUtils.clone(gltf.scene);
+        zombie = object;
         object.traverse( function ( child ) {
             if ( child.isMesh ) {
                 child.castShadow = true;
@@ -63,16 +65,14 @@ function init() {
                 child.material.transparent = false;
             }
         } );
-        scene.add( object );
 
+        scene.add(object)
         mixer = new THREE.AnimationMixer( object );
-        actions.push(mixer.clipAction(object.animations[0]));
 
-        loader.load( 'models/mad-zombie-run.fbx', function ( object2 ) {
-            //actions.push(mixer.clipAction(object2.animations[0]));
-            const action = actions[0];
-            action.play()
-        });
+        const action = mixer.clipAction( gltf.animations[ 3 ] );
+        action.play();
+
+        console.log(gltf, object)
     } );
 
     renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -115,6 +115,8 @@ function animate() {
     const delta = clock.getDelta();
 
     if ( mixer ) mixer.update( delta );
+    if( zombie )
+        zombie.position.set(0,0,-0.3), zombie.updateMatrix();
 
     renderer.render( scene, camera );
 
