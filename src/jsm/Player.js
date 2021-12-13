@@ -13,9 +13,9 @@ class Player{
 		
 		const self = this;
 		
-		const pt = this.object.position.clone();
-		pt.z += 10;
-		this.object.lookAt(pt);
+		//const pt = this.object.position.clone();
+		//pt.z += 10;
+		//this.object.lookAt(pt);
 		
         if (options.animations){
             //Use this option to set multiple animations directly
@@ -29,12 +29,14 @@ class Player{
 	}
 	
 	setTargetDirection(){
+		if(this.calculatedPath.length == 0)
+			return;
 		const player = this.object;
 		const pt = this.calculatedPath[0].clone();
 		pt.y = player.position.y;
 		player.lookAt(pt);
 		this.quaternion = player.quaternion.clone();
-		player.quaternion.copy(quaternion);
+		player.quaternion.copy(this.quaternion);
 	}
 	
 	set action(name){
@@ -59,20 +61,19 @@ class Player{
 	update(dt){
 		const speed = this.speed;
 		const player = this.object;
-		const old_position = player.position.clone();
+		//const old_position = player.position.clone();
 
 		
 		if (this.mixer) 
 			this.mixer.update(dt);
 
-        /*if (this.calculatedPath && this.calculatedPath.length) {
+        if (this.calculatedPath && this.calculatedPath.length) {
             const targetPosition = this.calculatedPath[0];
 			targetPosition.y = player.position.y;
 
             const vel = targetPosition.clone().sub(player.position);
             
             let pathLegComplete = (vel.lengthSq()<0.01);
-            console.log(player.position, vel, targetPosition)
             if (!pathLegComplete) {
                 //Get the distance to the target before moving
                 const prevDistanceSq = player.position.distanceToSquared(targetPosition);
@@ -100,10 +101,9 @@ class Player{
                     player.quaternion.copy(quaternion); 
                 }
             }
-        }*/
-		player.position.set(old_position.x, old_position.y, old_position.z);
+        }
 		//player.scale.set(0.005, 0.005, 0.005);
-		//player.updateMatrix();
+		player.updateMatrix();
     }
 }
 
