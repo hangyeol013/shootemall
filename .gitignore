@@ -5,4 +5,6 @@ output2/
 models/
 yarn.lock
 package-lock.json
+.ipynb_checkpoints/
 *.webm
+*.png

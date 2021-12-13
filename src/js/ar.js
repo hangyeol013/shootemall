@@ -78,9 +78,9 @@ function init() {
         object.position.set(-200, -200, -200);
         scene.add( object );
 
-        /*mixer = new THREE.AnimationMixer( object );
+        mixer = new THREE.AnimationMixer( object );
         const action = mixer.clipAction(object.animations[0]);
-        action.play();*/
+        action.play();
     } );
 
     //

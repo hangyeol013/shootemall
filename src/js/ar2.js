@@ -4,10 +4,12 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import { XREstimatedLight } from 'three/examples/jsm/webxr/XREstimatedLight.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {mat4, vec3, mat3, vec2} from 'gl-matrix';
 import {CanvasUI} from '../jsm/CanvasUI';
 import { ARButton } from '../jsm/ARButton';
-import { nearestPowerOfTwo } from 'three/src/math/MathUtils';
+//import { nearestPowerOfTwo } from 'three/src/math/MathUtils';
+import {Player} from '../jsm/Player';
 
 const near = 0.05, far = 20;
 const depth_resolution = 20;
@@ -66,7 +68,7 @@ class App{
         this.createUI();
         this.setupXR();
         this.generateGrid();
-        this.spawnZombie(new THREE.Vector3(0, 0, -5));
+        //this.spawnZombie(new THREE.Vector3(0, 0, -5));
 
         window.addEventListener('resize', this.resize.bind(this) );
 	}	
@@ -212,43 +214,106 @@ class App{
             renderer: this.renderer
         }
 
-
         this.ui = new CanvasUI(content, config);
         //this.ui.updateElement("body", "Hello World");
         //this.ui.update();
         this.ui.mesh.position.set(0, 0, -3);
         this.scene.add(this.ui.mesh);
     }
+
     initScene(){
         this.meshes = [];
         this.mixers = [];
+        this.zombies = [];
         //this.loadZombie();
+
+        const models = [/*'models/survivor.gltf', */'models/pumpkin.gltf'];
+        this.zombieModels = [];
+        const self = this;
+        const loader = new GLTFLoader();
+        for(let i = 0; i < models.length; i++) {
+            this.zombieModels.push([]);
+            loader.load( models[i], function ( gltf ) {
+                const object = gltf.scene.children[0];
+                let scale = 0.005;
+                object.scale.set(scale, scale, scale);
+                console.log(gltf)
+                self.zombieModels[i] = gltf;
+            } );
+        }
     }
-    
+
+    spawnZombie(position) {
+        const animations = ['Zombierun', 'Zombiewalk'];
+        const speeds = [0.5, 0.2];
+
+        const iModel = Math.floor(Math.random() * 1);
+        if(this.zombieModels[iModel] === undefined)
+            return;
+        const gltf = Object3D.clone(this.zombieModels[iModel]);
+        const object = gltf.scene.children[0];
+        object.position.set(position.x, position.y, position.z);
+        
+        const options = {
+            object: object,
+            speed: speeds[iModel],
+            animations: gltf.animations,
+            clip: gltf.animations[0],
+            app: this,
+            name: 'zombie',
+            npc: false
+        };
+        
+        const zombie = new Player(options);
+        zombie.action = animations[iModel];
+
+        this.scene.add(object);
+        this.zombies.push(zombie);
+        console.log('added mesh', zombie)
+    }
+
+    /*
     spawnZombie(position) {
         const loader = new FBXLoader();
         const self = this;
         loader.load( 'models/hiphop.fbx', function ( object ) {
-            /*object.traverse( function ( child ) {
+            object.traverse( function ( child ) {
                 if ( child.isMesh ) {
                     child.castShadow = true;
                     child.receiveShadow = true;
                     child.material.opacity = 1.0;
                     child.material.transparent = false;
                 }
-            } );*/
-            let mixer = new THREE.AnimationMixer( object );
-            //const action = mixer.clipAction( object.animations[ 0 ] );
-            //action.play();
+            } );
+            //object.material.opacity = 1.0;
+            //object.material.transparent = false;
             object.position.set(position.x, position.y, position.z);
             let scale = 0.01;
             object.scale.set(scale, scale, scale);
+            
+
+            const options = {
+                object: object,
+                speed: 0.5,
+                loader: loader,
+                animations: object.animations,
+                clip: object.animations[0],
+                app: self,
+                name: 'zombie',
+                npc: false
+            };
+            
+            const zombie = new Player(options);
+            //zombie.object.visible = false;
+            
+            zombie.action = 'mixamo.com';
+
             self.scene.add(object);
-            self.meshes.push(object);
+            self.zombies.push(zombie);
             //self.mixers.push(mixer);
-            console.log('added mesh', object, mixer)
+            console.log('added mesh', zombie)
         } );
-    }
+    }*/
     setupXR(){
         this.renderer.xr.enabled = true;
         const self = this;
@@ -299,15 +364,17 @@ class App{
     }
     
     animate(delta) {
-        this.mixers.forEach( (mixer) => { mixer.update(delta); });
-        this.i += 1;
-        this.meshes.forEach( (mesh) => { mesh.rotateY(delta) });
+        //this.mixers.forEach( (mixer) => { mixer.update(delta); });
+        this.zombies.forEach( (zombie) => { zombie.update(delta); });
+        this.zombies.forEach( (zombie) => { zombie.newPath(this.camera.position); });
+        //this.meshes.forEach( (mesh) => { mesh.rotateY(delta) });
     }
 
 	render(timestamp, frame) { 
+        this.i += 1;
         const delta = this.clock.getDelta();
         this.spawnZombies(delta);
-        this.animate(delta)
+        this.animate(delta);
         if(frame)
             this.onXRFrame(timestamp, frame);
         if(this.renderer.xr.isPresenting)
