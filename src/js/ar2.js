@@ -10,9 +10,10 @@ import {CanvasUI} from '../jsm/CanvasUI';
 import { ARButton } from '../jsm/ARButton';
 //import { nearestPowerOfTwo } from 'three/src/math/MathUtils';
 import {Player} from '../jsm/Player';
+import socket from './websocket';
 
 const near = 0.05, far = 20;
-const depth_resolution = 20;
+const depth_resolution = 30;
 function calculateVerticesFromViewCoordinatesSupersampled(depthData, viewport, camera) {
     const viewport_width = viewport.width;
     const viewport_height = viewport.height;
@@ -37,6 +38,15 @@ function calculateVerticesFromViewCoordinatesSupersampled(depthData, viewport, c
 
     return [vertices_data, depths_data];
 }
+
+function dataURLtoBlob(dataurl) {
+    var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], {type:mime});
+  }
 
 class App{
 	constructor(){
@@ -113,7 +123,7 @@ class App{
     generateGrid() {
         this.isConstructing = true;
         this.gridSize = 100;
-        this.gridNumSquare = 4;
+        this.gridNumSquare = 6;
         this.gridResolution = this.gridSize*this.gridNumSquare;
         const geometry = new THREE.PlaneBufferGeometry( this.gridSize, this.gridSize, this.gridResolution-1, this.gridResolution-1);
         this.gridGeometry = geometry;
@@ -148,6 +158,7 @@ class App{
         //plane.position.set(0, 0, -8);
         this.gridMesh = plane;
         this.scene.add( plane );
+        //this.gridMesh.visible = false;
     }
 
     updateGrid(samples) {
@@ -182,6 +193,35 @@ class App{
         }
     }
 
+    takepicture_grid() {
+        const context = canvas.getContext('2d');
+        canvas.width = this.gridResolution
+        canvas.height = this.gridResolution
+
+        const imgData = context.createImageData(this.gridResolution, this.gridResolution)
+        const u8data = imgData.data;
+
+        const vertices = this.gridVertices;
+        const n = vertices.count;
+        const color = new THREE.Color();
+        for(let i = 0; i < n; i++) {
+            color.setHSL((vertices.getY(i)-this.yFloor)/(this.yMax-this.yFloor), 1, Math.min(this.gridSamplesCount[i]/200, 0.5));
+            u8data[4*i] = 255*color.r;
+            u8data[4*i+1] = 255*color.g;
+            u8data[4*i+2] = 255*color.b;
+            u8data[4*i+3] = 255; 
+        }
+
+        context.putImageData(imgData, 0, 0);      
+        let data = canvas.toDataURL('image/png');
+        canvas.width = 0
+        canvas.height = 0
+      
+        data = dataURLtoBlob(data);
+        socket.emit('upload-screenshot', data);
+        console.log('took screenshot:', data.length)
+      }
+
     createUI() {
         const self = this;
         const content = {
@@ -204,6 +244,9 @@ class App{
             self.gridMesh.visible = self.isConstructing;
             self.ui.updateElement("info", msg);
             content.cons = (self.isConstructing) ? "Stop Build" : "Start Build";
+
+            if(!self.isConstructing)
+                self.takepicture_grid()
         }
         const config = {
             panelSize: {width: 2, height: 0.5},
@@ -417,13 +460,13 @@ class App{
                    // }
                     //this.updateGridColors();
 
-                    /*console.log(vertices);
+                    //console.log(vertices);
 
-                    let color = new THREE.Color();
+                    /*let color = new THREE.Color();
                     //console.log(vertices);
                     for(let i = 0; i < vertices.length; i++) {
-                        const geometry = new THREE.SphereGeometry( 0.05, 8, 8 );
-                        color.setHSL(depths[i] / far, 1, 0.5);
+                        const geometry = new THREE.SphereGeometry( 0.01, 8, 8 );
+                        color.setHSL((vertices[i].y-this.yFloor) / (this.yMax-this.yFloor), 1, 0.5);
                         const material = new THREE.MeshBasicMaterial( { color: color } );
                         const sphere = new THREE.Mesh( geometry, material );
                         sphere.position.set(vertices[i].x, vertices[i].y, vertices[i].z);
