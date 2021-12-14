@@ -1,3 +1,17 @@
+# Instructions
+
+- Install latest version of Chrome (or Chrome Canary if it does not work) on your phone
+- Verfy that WebXR is working by going to https://immersive-web.github.io/webxr-samples/immersive-ar-session.html
+- On your main computer (we will suppose it is running on Linux), install `npm` and `node`
+- `git clone` the repository and `cd` to it
+- Run `npm install`
+- Run `npm run init` to build the static website `dist` folder
+- Run `npm start` to serve the website
+- Retrieve your computer's ip address with `ip addr` or `ifconfig`
+- On your phone, go to `https://enter.your.ip.address:8443` (do not forget the s in https and enter the correct port)
+- Click on 'Start AR' and Voila!
+- If it does not work, plug your phone to your computer, launch a chrome instance on your computer, go to the url `chrome://inspect`, find and click the corresponding tab, go to the console tab, buy a new phone and cry!
+
 # Done
 
 1) App
@@ -15,41 +29,32 @@
 - Render phone camera
 - Basic UI
 
-https://github.com/immersive-web/webxr-samples/blob/main/proposals/phone-ar-depth-gpu.html
-https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API/Spatial_tracking
-3) 3D content
+
+2) 3D content
 - Using three.js https://threejs.org/examples/
 - Load animated mesh
 - Find mesh zombies:
   - Using Adobe Mixamo https://www.mixamo.com and the FBX file format (mesh + animations)
   - SEE THIS: https://threejs.org/examples/?q=fbx#webgl_loader_fbx
-# TODO
 
-2) 3D reconstruction
-- Implement the Atlas or equivalent scene reconstruction
-- Integrate to app: send to phone
+3) Scene reconstruction
+  - WebXR depth API: https://github.com/immersive-web/webxr-samples/blob/main/proposals/phone-ar-depth-gpu.html, https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API/Spatial_tracking
 
-3) 3D content
-- Find meshes, sounds
-- Add lightning, mesh, animation, sound effects, ...
-  
 4) AR content
 - camera estimation
 - lightning estimation
 
 5) Logic Game
-- Logic zombies: move around
-- Logic shooting
+- Pathfinding: Dijkstra in heightmap
+- Kill zombies: Raycasting 
 
 
-# Planning
+# TODO
 
-Week 0: getting started
-Week 1: upload + phone camera done
-Week 2: reconstruction done? (or algo)
-Week 3: Threejs + basic mesh rendering
-Week 4: Logic + app
-
+1) Add more logic: attack, die
+2) Finish adding gun + rounds
+3) Add more evolved UI
+4) Fix not realistic object size + position?
 
 # Organisation
 
@@ -64,10 +69,3 @@ Week 4: Logic + app
       - socket.io: chunk / 
     - ar.js: ar part (stack of balls)
   - main entrypoint: index.js
-
-
-# Scene reconstruction
-
-
-- Tried SfM: Colmap, too slow
-- Tried Stereo reconstruction: stereo.py

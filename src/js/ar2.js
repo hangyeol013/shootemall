@@ -89,6 +89,7 @@ class App{
 	}	
 
     spawnPortals(count) {
+        const vertices = this.gridVertices;
         const self = this;
         function randomCell() {
             const position = Math.floor(self.gridVertices.count * Math.random());
@@ -100,8 +101,8 @@ class App{
                 new THREE.MeshBasicMaterial()
             );
             let coord = randomCell();
-            //while(this.gridSamplesCount[coord] < 100)
-            //    coord = randomCell();
+            while(this.gridSamplesCount[coord] < 100 && vertices.getY(coord) > this.yFloor + 1)
+                coord = randomCell();
             let position = this.cell_to_position(coord);
             reticle.position.set(position.x, position.y, position.z);
             this.portalPositions.push(position);
@@ -112,10 +113,10 @@ class App{
     }
 
     spawnZombies(delta) {
-        this.zombiePerPortalFreq = 0.05;
+        this.zombiePerPortalFreq = 0.02;
         const portalCount = this.portalPositions.length;
         for(let i = 0; i < portalCount; i++) {
-            const p = delta * this.zombiePerPortalFreq;
+            const p = Math.min(this.zombiePerPortalFreq * delta, 0.1)
             if(Math.random() <= p) {
                 this.spawnZombie(this.portalPositions[i]);
             }
@@ -159,25 +160,29 @@ class App{
                     let v = this.position_to_cell(new THREE.Vector3(pos.x+dx*gridStep, 0, pos.z+dz*gridStep));
                     if(v < 0)
                         continue;
-                    if(this.distanceField[v] < 0 && Math.abs(vertices.getY(u), vertices.getY(v)) <= maxHeightDiff)
+                    if(this.distanceField[v] < 0 && vertices.getY(v) <= this.yFloor + 1 && this.gridSamplesCount[v] >= 5)
                         this.distanceField[v] = this.distanceField[u]+1, queue.queue(v), this.gradientField[v] = new THREE.Vector3(-dx, 0, -dz).normalize();
                 }
             }
         }
 
-        for(let i = 0; i < n; i++) {
+        /*for(let i = 0; i < n; i++) {
             vertices.setY(i, this.distanceField[i]/1000), this.gridSamplesCount[i] = 100;
         }
-        this.updateGridColors()
+        this.updateGridColors()*/
     }
 
     update_pathfinding() {
+        const gridStep = 1.0/this.gridNumSquare;
+
         for(const zombie of this.zombies) {
             //const dist = this.camera.position.distanceTo(zombie.position);
             let position = this.gradientField[this.position_to_cell(zombie.object.position)].clone(), position2 = position.clone();
-            position2.multiplyScalar(zombie.speed).add(zombie.object.position);
+            position2.multiplyScalar(zombie.speed*gridStep).add(zombie.object.position);
             zombie.calculatedPath = [position2];
             zombie.setTargetDirection();
+
+            //zombie.object.position.setY(this.gridVertices.getY(this.position_to_cell(zombie.object.position)));
         }
     }
 
@@ -207,12 +212,13 @@ class App{
 
     generateGrid() {
         this.isConstructing = true;
-        this.gridSize = 10;
+        this.gridSize = 30;
         this.gridNumSquare = 4;
         this.gridResolution = this.gridSize*this.gridNumSquare;
         const geometry = new THREE.PlaneBufferGeometry( this.gridSize, this.gridSize, this.gridResolution-1, this.gridResolution-1);
         this.gridGeometry = geometry;
         this.gridVertices = this.gridGeometry.attributes.position;
+        this.yFloor = 0;
 
         const vertices = this.gridVertices;
         const n = vertices.count;
@@ -242,7 +248,7 @@ class App{
         //plane.position.set(0, 0, -8);
         this.gridMesh = plane;
         this.scene.add( plane );
-        this.gridMesh.visible = true;//this.isConstructing;
+        this.gridMesh.visible = this.isConstructing;
     }
 
     updateGrid(samples) {
@@ -256,7 +262,10 @@ class App{
             const coord = x+z*this.gridResolution;
             this.gridSamplesSum[coord] += samples[i].y;
             this.gridSamplesCount[coord] += 1;
-            this.gridVertices.setY(coord, this.gridSamplesSum[coord] / this.gridSamplesCount[coord]);
+            const y = this.gridSamplesSum[coord] / this.gridSamplesCount[coord]
+            this.gridVertices.setY(coord, y);
+            this.yFloor = y;
+
         }
 
         this.updateGridColors();
@@ -270,13 +279,16 @@ class App{
             yFloor = Math.min(yFloor, vertices.getY(i));
             yMax = Math.max(yMax, vertices.getY(i));
         }
+        this.gridGeometry.setAttribute( 'position', vertices );
 
-        this.gridGeometry.setAttribute( 'color', new THREE.BufferAttribute( new Float32Array(n*3 ), 3 ) );
+        this.gridGeometry.setAttribute( 'color', new THREE.BufferAttribute( new Float32Array(n*4 ), 4 ) );
         const colors = this.gridGeometry.attributes.color;
         const color = new THREE.Color();
         for(let i = 0; i < n; i++) {
-            color.setHSL((vertices.getY(i)-yFloor)/(yMax-yFloor), 1, Math.min(this.gridSamplesCount[i]/200, 0.5));
-            colors.setXYZ(i, color.r, color.g, color.b);
+            //const z =(vertices.getY(i)-yFloor)/(yMax-yFloor)
+            const z = vertices.getY(i)
+            color.setHSL((z <= this.yFloor + 1) ? 0.75 : 0.25, 1, Math.min(this.gridSamplesCount[i]/200, 0.5));
+            colors.setXYZW(i, color.r, color.g, color.b, 0.5);
         }
     }
 
@@ -314,10 +326,11 @@ class App{
         const content = {
             info: "Hello", 
             cons: "Stop Build",
-            spawn: "Portals"
+            spawn: "Start"
         }
         function onSpawn() {
-            self.spawnPortals(5);
+            self.finishedLoading = true;
+            self.startGame()
 
             const msg = "Portals spawned";
             console.log(msg);
@@ -325,6 +338,8 @@ class App{
         }
 
         function onConstruct() {
+            if(!self.isConstructing)
+                return;
             const msg = (self.isConstructing) ? "Stopped build" : "Started build";
             self.isConstructing = !self.isConstructing;
             console.log(msg);
@@ -380,7 +395,7 @@ class App{
         const self = this;
 
         const loader = new GLTFLoader();
-        const models = [/*'models/survivor.gltf', */'models/pumpkin.gltf'];
+        const models = ['models/survivor.gltf', 'models/pumpkin.gltf'];
 
         for(let i = 0; i < models.length; i++) {
             this.zombieModels.push(undefined);
@@ -394,10 +409,8 @@ class App{
                 self.zombieModels[i] = gltf;
                 nLoaded += 1;
                 if(nLoaded == models.length && self.ui) {
-                    self.finishedLoading = true;
                     self.ui.updateElement("info", "Meshes loaded: get ready to start!");
 
-                    self.startGame()
                 }
             } );
         }
@@ -415,7 +428,7 @@ class App{
         const gltf = this.zombieModels[iModel];
 
         const object = SkeletonUtils.clone(gltf.scene);
-        const scale = 0.005;
+        const scale = 0.05;
         object.scale.set(scale, scale, scale);
         object.position.set(position.x, position.y, position.z);
         object.quaternion.set(0,0,0,1);
@@ -530,10 +543,8 @@ class App{
         this.i += 1;
         const delta = this.clock.getDelta();
 
-        //this.ui.mesh.applyMatrix4(this.camera.matrixWorld);
-
+        
         this.update_gradientfield();
-
 
         if(this.finishedLoading) {
             this.update_gradientfield();
