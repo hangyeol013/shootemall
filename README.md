@@ -1,7 +1,12 @@
+# Description
+
+Augmented-Reality Zombie FPS Game using Javascript, three.js and WebXR.
+Runs on Android using the latest Google Chrome Canary application.
+
 # Instructions
 
-- Install latest version of Chrome (or Chrome Canary if it does not work) on your phone
-- Verfy that WebXR is working by going to https://immersive-web.github.io/webxr-samples/immersive-ar-session.html
+- On your phone, install latest version of Chrome (or Chrome Canary if it does not work)
+- On your phone, verify that WebXR is working by going to https://immersive-web.github.io/webxr-samples/immersive-ar-session.html
 - On your main computer (we will suppose it is running on Linux), install `npm` and `node`
 - `git clone` the repository and `cd` to it
 - Run `npm install`
@@ -42,12 +47,11 @@
 
 4) AR content
 - camera estimation
-- lightning estimation
+- lighting estimation
 
 5) Logic Game
 - Pathfinding: Dijkstra in heightmap
 - Kill zombies: Raycasting 
-
 
 # TODO
 
@@ -67,5 +71,5 @@
   - code: js
     - record.js: handles the recording client-side
       - socket.io: chunk / 
-    - ar.js: ar part (stack of balls)
+    - ar2.js: main code
   - main entrypoint: index.js
