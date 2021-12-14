@@ -10,7 +10,7 @@
 - Retrieve your computer's ip address with `ip addr` or `ifconfig`
 - On your phone, go to `https://enter.your.ip.address:8443` (do not forget the s in https and enter the correct port)
 - Click on 'Start AR' and Voila!
-- If it does not work, plug your phone to your computer, launch a chrome instance on your computer, go to the url `chrome://inspect`, find and click the corresponding tab, go to the console tab, buy a new phone and cry!
+- If it does not work, plug your phone to your computer, launch a chrome instance on your computer, go to the url `chrome://inspect`, find and click the corresponding tab, go to the console tab, read the error, understand the error, read the code, modify the code, launch again, pray, cry or buy a new phone!
 
 # Done
 

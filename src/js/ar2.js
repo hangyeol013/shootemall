@@ -101,7 +101,7 @@ class App{
                 new THREE.MeshBasicMaterial()
             );
             let coord = randomCell();
-            while(this.gridSamplesCount[coord] < 100 && vertices.getY(coord) > this.yFloor + 1)
+            while(this.gridSamplesCount[coord] < 100)// && vertices.getY(coord) > this.yFloor + 1)
                 coord = randomCell();
             let position = this.cell_to_position(coord);
             reticle.position.set(position.x, position.y, position.z);
@@ -160,7 +160,7 @@ class App{
                     let v = this.position_to_cell(new THREE.Vector3(pos.x+dx*gridStep, 0, pos.z+dz*gridStep));
                     if(v < 0)
                         continue;
-                    if(this.distanceField[v] < 0 && vertices.getY(v) <= this.yFloor + 1 && this.gridSamplesCount[v] >= 5)
+                    if(this.distanceField[v] < 0) //&& vertices.getY(v) <= this.yFloor + 1 && this.gridSamplesCount[v] >= 5)
                         this.distanceField[v] = this.distanceField[u]+1, queue.queue(v), this.gradientField[v] = new THREE.Vector3(-dx, 0, -dz).normalize();
                 }
             }
@@ -177,9 +177,9 @@ class App{
 
         for(const zombie of this.zombies) {
             //const dist = this.camera.position.distanceTo(zombie.position);
-            let position = this.gradientField[this.position_to_cell(zombie.object.position)].clone(), position2 = position.clone();
-            position2.multiplyScalar(zombie.speed*gridStep).add(zombie.object.position);
-            zombie.calculatedPath = [position2];
+            let position = this.gradientField[this.position_to_cell(zombie.object.position)].clone();
+            position.multiplyScalar(zombie.speed).add(zombie.object.position);
+            zombie.calculatedPath = [position];
             zombie.setTargetDirection();
 
             //zombie.object.position.setY(this.gridVertices.getY(this.position_to_cell(zombie.object.position)));
@@ -212,7 +212,7 @@ class App{
 
     generateGrid() {
         this.isConstructing = true;
-        this.gridSize = 30;
+        this.gridSize = 10;
         this.gridNumSquare = 4;
         this.gridResolution = this.gridSize*this.gridNumSquare;
         const geometry = new THREE.PlaneBufferGeometry( this.gridSize, this.gridSize, this.gridResolution-1, this.gridResolution-1);
@@ -264,8 +264,7 @@ class App{
             this.gridSamplesCount[coord] += 1;
             const y = this.gridSamplesSum[coord] / this.gridSamplesCount[coord]
             this.gridVertices.setY(coord, y);
-            this.yFloor = y;
-
+            this.yFloor = Math.min(y, this.yFloor);
         }
 
         this.updateGridColors();
@@ -285,9 +284,7 @@ class App{
         const colors = this.gridGeometry.attributes.color;
         const color = new THREE.Color();
         for(let i = 0; i < n; i++) {
-            //const z =(vertices.getY(i)-yFloor)/(yMax-yFloor)
-            const z = vertices.getY(i)
-            color.setHSL((z <= this.yFloor + 1) ? 0.75 : 0.25, 1, Math.min(this.gridSamplesCount[i]/200, 0.5));
+            color.setHSL((vertices.getY(i)-yFloor)/(yMax-yFloor), 1, Math.min(this.gridSamplesCount[i]/200, 0.5));
             colors.setXYZW(i, color.r, color.g, color.b, 0.5);
         }
     }
@@ -547,9 +544,10 @@ class App{
         this.update_gradientfield();
 
         if(this.finishedLoading) {
-            this.update_gradientfield();
-            this.update_pathfinding();
+            //this.update_gradientfield();
             this.spawnZombies(delta);
+
+            this.update_pathfinding();
             this.zombies.forEach( (zombie) => { zombie.update(delta); });
 
         }

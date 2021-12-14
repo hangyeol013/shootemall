@@ -79,7 +79,7 @@ class Player{
                 const prevDistanceSq = player.position.distanceToSquared(targetPosition);
                 vel.normalize();
                 // Move player to target
-                if (this.quaternion) player.quaternion.slerp(this.quaternion, 0.1 * dt);
+                if (this.quaternion) player.quaternion.slerp(this.quaternion, 0.1);
                 player.position.add(vel.multiplyScalar(dt * speed));
                 //Get distance after moving, if greater then we've overshot and this leg is complete
                 const newDistanceSq = player.position.distanceToSquared(targetPosition);
